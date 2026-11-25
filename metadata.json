@@ -1,0 +1,6 @@
+{
+  "name": "Buku Sembako",
+  "description": "Aplikasi catatan bisnis toko sembako sederhana untuk kasir, stok barang, keuangan, utang pelanggan dan supplier, serta laporan laba rugi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

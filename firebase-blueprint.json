@@ -1,0 +1,189 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Barang dagangan toko sembako beserta harga modal, harga jual, stok, dan batas minimum stok.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Nama barang (1..100 karakter)." },
+        "category": { "type": "string", "description": "Kategori barang sembako." },
+        "costPrice": { "type": "integer", "description": "Harga modal per satuan dalam Rupiah." },
+        "sellPrice": { "type": "integer", "description": "Harga jual per satuan dalam Rupiah." },
+        "stock": { "type": "integer", "description": "Jumlah stok tersedia." },
+        "unit": { "type": "string", "description": "Satuan barang (pcs, kg, liter, dus, dll)." },
+        "minStock": { "type": "integer", "description": "Batas minimum peringatan stok menipis." },
+        "photoPath": { "type": "string", "description": "Path lokal foto barang opsional." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp saat dibuat." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp saat diperbarui." }
+      },
+      "required": ["name", "category", "costPrice", "sellPrice", "stock", "unit", "minStock", "createdAt", "updatedAt"]
+    },
+    "Sale": {
+      "title": "Sale",
+      "description": "Catatan transaksi penjualan kasir beserta detail barang, pembayaran, kembalian, dan keuntungan.",
+      "type": "object",
+      "properties": {
+        "receiptNumber": { "type": "string", "description": "Nomor struk transaksi." },
+        "customerName": { "type": "string", "description": "Nama pelanggan (opsional)." },
+        "paymentMethod": { "type": "string", "enum": ["TUNAI", "TRANSFER", "QRIS", "UTANG"] },
+        "paymentStatus": { "type": "string", "enum": ["LUNAS", "SEBAGIAN", "UTANG"] },
+        "items": { "type": "array", "description": "Daftar item penjualan (1..50 item)." },
+        "totalAmount": { "type": "integer", "description": "Total harga jual transaksi." },
+        "totalCost": { "type": "integer", "description": "Total modal barang terjual." },
+        "totalProfit": { "type": "integer", "description": "Total keuntungan transaksi." },
+        "paidAmount": { "type": "integer", "description": "Nominal uang yang dibayarkan." },
+        "changeAmount": { "type": "integer", "description": "Nominal kembalian." },
+        "remainingDebt": { "type": "integer", "description": "Sisa utang pelanggan dari transaksi ini." },
+        "occurredAtMillis": { "type": "integer", "description": "Waktu transaksi dalam epoch millis." },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["receiptNumber", "customerName", "paymentMethod", "paymentStatus", "items", "totalAmount", "totalCost", "totalProfit", "paidAmount", "changeAmount", "remainingDebt", "occurredAtMillis", "createdAt", "updatedAt"]
+    },
+    "StockPurchase": {
+      "title": "StockPurchase",
+      "description": "Catatan pembelian stok barang masuk / belanja modal toko.",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "unit": { "type": "string" },
+        "quantity": { "type": "integer" },
+        "buyPrice": { "type": "integer" },
+        "totalCost": { "type": "integer" },
+        "paidAmount": { "type": "integer" },
+        "supplierName": { "type": "string" },
+        "paymentMethod": { "type": "string", "enum": ["TUNAI", "TRANSFER", "QRIS", "UTANG"] },
+        "paymentStatus": { "type": "string", "enum": ["LUNAS", "UTANG"] },
+        "notePhotoPath": { "type": "string" },
+        "occurredAtMillis": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "productName", "unit", "quantity", "buyPrice", "totalCost", "paidAmount", "supplierName", "paymentMethod", "paymentStatus", "occurredAtMillis", "createdAt", "updatedAt"]
+    },
+    "StockLog": {
+      "title": "StockLog",
+      "description": "Riwayat perubahan jumlah stok dan riwayat perubahan harga modal barang.",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "changeType": { "type": "string", "enum": ["MASUK", "KELUAR_PENJUALAN", "TAMBAH_MANUAL", "KURANG_MANUAL", "BARANG_RUSAK", "PERUBAHAN_HARGA"] },
+        "quantityDelta": { "type": "integer" },
+        "stockBefore": { "type": "integer" },
+        "stockAfter": { "type": "integer" },
+        "oldCostPrice": { "type": "integer" },
+        "newCostPrice": { "type": "integer" },
+        "note": { "type": "string" },
+        "occurredAtMillis": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "productName", "changeType", "quantityDelta", "stockBefore", "stockAfter", "note", "occurredAtMillis", "createdAt", "updatedAt"]
+    },
+    "CashTransaction": {
+      "title": "CashTransaction",
+      "description": "Catatan arus kas uang masuk dan uang keluar toko.",
+      "type": "object",
+      "properties": {
+        "direction": { "type": "string", "enum": ["MASUK", "KELUAR"] },
+        "category": { "type": "string" },
+        "amount": { "type": "integer" },
+        "paymentMethod": { "type": "string", "enum": ["TUNAI", "TRANSFER", "QRIS"] },
+        "description": { "type": "string" },
+        "occurredAtMillis": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["direction", "category", "amount", "paymentMethod", "description", "occurredAtMillis", "createdAt", "updatedAt"]
+    },
+    "CustomerDebt": {
+      "title": "CustomerDebt",
+      "description": "Catatan utang pelanggan beserta riwayat cicilan pembayaran.",
+      "type": "object",
+      "properties": {
+        "customerName": { "type": "string" },
+        "phone": { "type": "string" },
+        "totalDebt": { "type": "integer" },
+        "paidAmount": { "type": "integer" },
+        "remainingAmount": { "type": "integer" },
+        "status": { "type": "string", "enum": ["BELUM_LUNAS", "LUNAS"] },
+        "note": { "type": "string" },
+        "payments": { "type": "array" },
+        "occurredAtMillis": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerName", "phone", "totalDebt", "paidAmount", "remainingAmount", "status", "note", "payments", "occurredAtMillis", "createdAt", "updatedAt"]
+    },
+    "SupplierDebt": {
+      "title": "SupplierDebt",
+      "description": "Catatan utang toko ke supplier atau pemasok barang.",
+      "type": "object",
+      "properties": {
+        "supplierName": { "type": "string" },
+        "itemDescription": { "type": "string" },
+        "totalDebt": { "type": "integer" },
+        "paidAmount": { "type": "integer" },
+        "remainingAmount": { "type": "integer" },
+        "status": { "type": "string", "enum": ["BELUM_LUNAS", "LUNAS"] },
+        "note": { "type": "string" },
+        "payments": { "type": "array" },
+        "occurredAtMillis": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["supplierName", "itemDescription", "totalDebt", "paidAmount", "remainingAmount", "status", "note", "payments", "occurredAtMillis", "createdAt", "updatedAt"]
+    },
+    "ActivityEntry": {
+      "title": "ActivityEntry",
+      "description": "Catatan riwayat aktivitas toko terpadu berdasarkan tanggal.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["PENJUALAN", "PEMBELIAN_STOK", "BARANG_MASUK", "BARANG_KELUAR", "PENGELUARAN", "PEMASUKAN", "PEMBAYARAN_UTANG", "TAMBAHAN_MODAL", "PENGURANGAN_STOK", "BARANG_RUSAK"] },
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "amount": { "type": "integer" },
+        "occurredAtMillis": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type", "title", "subtitle", "amount", "occurredAtMillis", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Daftar barang dan stok toko milik pengguna."
+    },
+    "/users/{userId}/sales/{saleId}": {
+      "schema": { "$ref": "#/entities/Sale" },
+      "description": "Riwayat transaksi penjualan kasir milik pengguna."
+    },
+    "/users/{userId}/purchases/{purchaseId}": {
+      "schema": { "$ref": "#/entities/StockPurchase" },
+      "description": "Riwayat belanja modal dan barang masuk milik pengguna."
+    },
+    "/users/{userId}/stock_logs/{logId}": {
+      "schema": { "$ref": "#/entities/StockLog" },
+      "description": "Riwayat mutasi stok dan perubahan harga modal milik pengguna."
+    },
+    "/users/{userId}/cash_transactions/{txId}": {
+      "schema": { "$ref": "#/entities/CashTransaction" },
+      "description": "Buku arus kas pemasukan dan pengeluaran milik pengguna."
+    },
+    "/users/{userId}/customer_debts/{debtId}": {
+      "schema": { "$ref": "#/entities/CustomerDebt" },
+      "description": "Daftar utang pelanggan milik pengguna."
+    },
+    "/users/{userId}/supplier_debts/{debtId}": {
+      "schema": { "$ref": "#/entities/SupplierDebt" },
+      "description": "Daftar utang toko kepada supplier milik pengguna."
+    },
+    "/users/{userId}/activities/{activityId}": {
+      "schema": { "$ref": "#/entities/ActivityEntry" },
+      "description": "Log aktivitas toko harian milik pengguna."
+    }
+  }
+}

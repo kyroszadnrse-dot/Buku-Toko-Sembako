@@ -1,0 +1,256 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net: deny all reads and writes by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidTimestamp(ts) {
+      return ts is timestamp && ts <= request.time;
+    }
+
+    function isValidProduct(data) {
+      return data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+             data.category is string && data.category.size() >= 1 && data.category.size() <= 50 &&
+             data.costPrice is int && data.costPrice >= 0 &&
+             data.sellPrice is int && data.sellPrice >= 0 &&
+             data.stock is int && data.stock >= 0 &&
+             data.unit is string && data.unit.size() >= 1 && data.unit.size() <= 30 &&
+             data.minStock is int && data.minStock >= 0 &&
+             (!('photoPath' in data) || (data.photoPath is string && data.photoPath.size() <= 500)) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidSale(data) {
+      return data.receiptNumber is string && data.receiptNumber.size() >= 1 && data.receiptNumber.size() <= 40 &&
+             data.customerName is string && data.customerName.size() <= 100 &&
+             data.paymentMethod in ['TUNAI', 'TRANSFER', 'QRIS', 'UTANG'] &&
+             data.paymentStatus in ['LUNAS', 'SEBAGIAN', 'UTANG'] &&
+             data.items is list && data.items.size() >= 1 && data.items.size() <= 50 &&
+             data.items[0] is map &&
+             data.totalAmount is int && data.totalAmount >= 0 &&
+             data.totalCost is int && data.totalCost >= 0 &&
+             data.totalProfit is int &&
+             data.paidAmount is int && data.paidAmount >= 0 &&
+             data.changeAmount is int && data.changeAmount >= 0 &&
+             data.remainingDebt is int && data.remainingDebt >= 0 &&
+             data.occurredAtMillis is int && data.occurredAtMillis > 0 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidPurchase(data) {
+      return data.productId is string && data.productId.size() >= 1 && data.productId.size() <= 128 &&
+             data.productName is string && data.productName.size() >= 1 && data.productName.size() <= 100 &&
+             data.unit is string && data.unit.size() >= 1 && data.unit.size() <= 30 &&
+             data.quantity is int && data.quantity > 0 &&
+             data.buyPrice is int && data.buyPrice >= 0 &&
+             data.totalCost is int && data.totalCost >= 0 &&
+             data.paidAmount is int && data.paidAmount >= 0 &&
+             data.supplierName is string && data.supplierName.size() <= 100 &&
+             data.paymentMethod in ['TUNAI', 'TRANSFER', 'QRIS', 'UTANG'] &&
+             data.paymentStatus in ['LUNAS', 'UTANG'] &&
+             (!('notePhotoPath' in data) || (data.notePhotoPath is string && data.notePhotoPath.size() <= 500)) &&
+             data.occurredAtMillis is int && data.occurredAtMillis > 0 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidStockLog(data) {
+      return data.productId is string && data.productId.size() >= 1 && data.productId.size() <= 128 &&
+             data.productName is string && data.productName.size() >= 1 && data.productName.size() <= 100 &&
+             data.changeType in ['MASUK', 'KELUAR_PENJUALAN', 'TAMBAH_MANUAL', 'KURANG_MANUAL', 'BARANG_RUSAK', 'PERUBAHAN_HARGA'] &&
+             data.quantityDelta is int &&
+             data.stockBefore is int && data.stockBefore >= 0 &&
+             data.stockAfter is int && data.stockAfter >= 0 &&
+             (!('oldCostPrice' in data) || (data.oldCostPrice is int && data.oldCostPrice >= 0)) &&
+             (!('newCostPrice' in data) || (data.newCostPrice is int && data.newCostPrice >= 0)) &&
+             data.note is string && data.note.size() <= 300 &&
+             data.occurredAtMillis is int && data.occurredAtMillis > 0 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidCashTransaction(data) {
+      return data.direction in ['MASUK', 'KELUAR'] &&
+             data.category is string && data.category.size() >= 1 && data.category.size() <= 60 &&
+             data.amount is int && data.amount > 0 &&
+             data.paymentMethod in ['TUNAI', 'TRANSFER', 'QRIS'] &&
+             data.description is string && data.description.size() <= 300 &&
+             data.occurredAtMillis is int && data.occurredAtMillis > 0 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidCustomerDebt(data) {
+      return data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 100 &&
+             data.phone is string && data.phone.size() <= 30 &&
+             data.totalDebt is int && data.totalDebt > 0 &&
+             data.paidAmount is int && data.paidAmount >= 0 &&
+             data.remainingAmount is int && data.remainingAmount >= 0 &&
+             data.paidAmount + data.remainingAmount == data.totalDebt &&
+             data.status in ['BELUM_LUNAS', 'LUNAS'] &&
+             data.note is string && data.note.size() <= 300 &&
+             data.payments is list && data.payments.size() <= 100 &&
+             (data.payments.size() == 0 || data.payments[0] is map) &&
+             data.occurredAtMillis is int && data.occurredAtMillis > 0 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidSupplierDebt(data) {
+      return data.supplierName is string && data.supplierName.size() >= 1 && data.supplierName.size() <= 100 &&
+             data.itemDescription is string && data.itemDescription.size() >= 1 && data.itemDescription.size() <= 200 &&
+             data.totalDebt is int && data.totalDebt > 0 &&
+             data.paidAmount is int && data.paidAmount >= 0 &&
+             data.remainingAmount is int && data.remainingAmount >= 0 &&
+             data.paidAmount + data.remainingAmount == data.totalDebt &&
+             data.status in ['BELUM_LUNAS', 'LUNAS'] &&
+             data.note is string && data.note.size() <= 300 &&
+             data.payments is list && data.payments.size() <= 100 &&
+             (data.payments.size() == 0 || data.payments[0] is map) &&
+             data.occurredAtMillis is int && data.occurredAtMillis > 0 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidActivityEntry(data) {
+      return data.type in ['PENJUALAN', 'PEMBELIAN_STOK', 'BARANG_MASUK', 'BARANG_KELUAR', 'PENGELUARAN', 'PEMASUKAN', 'PEMBAYARAN_UTANG', 'TAMBAHAN_MODAL', 'PENGURANGAN_STOK', 'BARANG_RUSAK'] &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 140 &&
+             data.subtitle is string && data.subtitle.size() <= 300 &&
+             data.amount is int &&
+             data.occurredAtMillis is int && data.occurredAtMillis > 0 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    match /users/{userId} {
+      allow get, list: if false;
+
+      match /products/{productId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(productId);
+        allow create: if isOwner(userId) && isValidId(productId) &&
+                         incoming().keys().hasAll(['name', 'category', 'costPrice', 'sellPrice', 'stock', 'unit', 'minStock', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['name', 'category', 'costPrice', 'sellPrice', 'stock', 'unit', 'minStock', 'photoPath', 'createdAt', 'updatedAt']) &&
+                         isValidProduct(incoming());
+        allow update: if isOwner(userId) && isValidId(productId) &&
+                         isValidProduct(incoming()) &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['name', 'category', 'costPrice', 'sellPrice', 'stock', 'unit', 'minStock', 'photoPath', 'updatedAt']);
+        allow delete: if isOwner(userId) && isValidId(productId);
+      }
+
+      match /sales/{saleId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(saleId);
+        allow create: if isOwner(userId) && isValidId(saleId) &&
+                         incoming().keys().hasAll(['receiptNumber', 'customerName', 'paymentMethod', 'paymentStatus', 'items', 'totalAmount', 'totalCost', 'totalProfit', 'paidAmount', 'changeAmount', 'remainingDebt', 'occurredAtMillis', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['receiptNumber', 'customerName', 'paymentMethod', 'paymentStatus', 'items', 'totalAmount', 'totalCost', 'totalProfit', 'paidAmount', 'changeAmount', 'remainingDebt', 'occurredAtMillis', 'createdAt', 'updatedAt']) &&
+                         isValidSale(incoming());
+        allow update: if false;
+        allow delete: if isOwner(userId) && isValidId(saleId);
+      }
+
+      match /purchases/{purchaseId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(purchaseId);
+        allow create: if isOwner(userId) && isValidId(purchaseId) &&
+                         incoming().keys().hasAll(['productId', 'productName', 'unit', 'quantity', 'buyPrice', 'totalCost', 'paidAmount', 'supplierName', 'paymentMethod', 'paymentStatus', 'occurredAtMillis', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['productId', 'productName', 'unit', 'quantity', 'buyPrice', 'totalCost', 'paidAmount', 'supplierName', 'paymentMethod', 'paymentStatus', 'notePhotoPath', 'occurredAtMillis', 'createdAt', 'updatedAt']) &&
+                         isValidPurchase(incoming());
+        allow update: if false;
+        allow delete: if isOwner(userId) && isValidId(purchaseId);
+      }
+
+      match /stock_logs/{logId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(logId);
+        allow create: if isOwner(userId) && isValidId(logId) &&
+                         incoming().keys().hasAll(['productId', 'productName', 'changeType', 'quantityDelta', 'stockBefore', 'stockAfter', 'note', 'occurredAtMillis', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['productId', 'productName', 'changeType', 'quantityDelta', 'stockBefore', 'stockAfter', 'oldCostPrice', 'newCostPrice', 'note', 'occurredAtMillis', 'createdAt', 'updatedAt']) &&
+                         isValidStockLog(incoming());
+        allow update: if false;
+        allow delete: if isOwner(userId) && isValidId(logId);
+      }
+
+      match /cash_transactions/{txId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(txId);
+        allow create: if isOwner(userId) && isValidId(txId) &&
+                         incoming().keys().hasAll(['direction', 'category', 'amount', 'paymentMethod', 'description', 'occurredAtMillis', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['direction', 'category', 'amount', 'paymentMethod', 'description', 'occurredAtMillis', 'createdAt', 'updatedAt']) &&
+                         isValidCashTransaction(incoming());
+        allow update: if false;
+        allow delete: if isOwner(userId) && isValidId(txId);
+      }
+
+      match /customer_debts/{debtId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(debtId);
+        allow create: if isOwner(userId) && isValidId(debtId) &&
+                         incoming().keys().hasAll(['customerName', 'phone', 'totalDebt', 'paidAmount', 'remainingAmount', 'status', 'note', 'payments', 'occurredAtMillis', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['customerName', 'phone', 'totalDebt', 'paidAmount', 'remainingAmount', 'status', 'note', 'payments', 'occurredAtMillis', 'createdAt', 'updatedAt']) &&
+                         isValidCustomerDebt(incoming());
+        allow update: if isOwner(userId) && isValidId(debtId) &&
+                         isValidCustomerDebt(incoming()) &&
+                         existing().status == 'BELUM_LUNAS' &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().totalDebt == existing().totalDebt &&
+                         incoming().occurredAtMillis == existing().occurredAtMillis &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['paidAmount', 'remainingAmount', 'status', 'payments', 'note', 'updatedAt']);
+        allow delete: if isOwner(userId) && isValidId(debtId);
+      }
+
+      match /supplier_debts/{debtId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(debtId);
+        allow create: if isOwner(userId) && isValidId(debtId) &&
+                         incoming().keys().hasAll(['supplierName', 'itemDescription', 'totalDebt', 'paidAmount', 'remainingAmount', 'status', 'note', 'payments', 'occurredAtMillis', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['supplierName', 'itemDescription', 'totalDebt', 'paidAmount', 'remainingAmount', 'status', 'note', 'payments', 'occurredAtMillis', 'createdAt', 'updatedAt']) &&
+                         isValidSupplierDebt(incoming());
+        allow update: if isOwner(userId) && isValidId(debtId) &&
+                         isValidSupplierDebt(incoming()) &&
+                         existing().status == 'BELUM_LUNAS' &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().totalDebt == existing().totalDebt &&
+                         incoming().occurredAtMillis == existing().occurredAtMillis &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['paidAmount', 'remainingAmount', 'status', 'payments', 'note', 'updatedAt']);
+        allow delete: if isOwner(userId) && isValidId(debtId);
+      }
+
+      match /activities/{activityId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(activityId);
+        allow create: if isOwner(userId) && isValidId(activityId) &&
+                         incoming().keys().hasAll(['type', 'title', 'subtitle', 'amount', 'occurredAtMillis', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['type', 'title', 'subtitle', 'amount', 'occurredAtMillis', 'createdAt', 'updatedAt']) &&
+                         isValidActivityEntry(incoming());
+        allow update: if false;
+        allow delete: if isOwner(userId) && isValidId(activityId);
+      }
+    }
+  }
+}

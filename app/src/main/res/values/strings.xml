@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Buku Sembako</string>
+    <string name="nav_beranda">Beranda</string>
+    <string name="nav_kasir">Kasir</string>
+    <string name="nav_barang">Barang</string>
+    <string name="nav_aktivitas">Aktivitas</string>
+    <string name="nav_keuangan">Keuangan</string>
+    <string name="auth_title">Buku Sembako</string>
+    <string name="auth_subtitle">Catatan bisnis harian toko sembako yang praktis, rapi, dan tersimpan aman di cloud.</string>
+    <string name="auth_button_google">Masuk dengan Google</string>
+    <string name="sign_out">Keluar Akun</string>
+</resources>
